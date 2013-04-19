@@ -1,0 +1,63 @@
+
+include ./Makefile.in
+
+TARGET := ./xp/a.exe
+RELEASE_TARGET := ./release/$(TARGET)
+
+CFLAGS := -g3 -O0 -Wall -DLINUX=2 -DMEMWATCH -DMEMWATCH_STDIO -DOR1K $(INC)
+LDFLAGS := -L. -lm -lpthread
+
+JAUI_CFLAGS := -g3 -O0 -Wall -DLINUX=2
+JAUI_LDFLAGS := -lmingw32 -lSDLmain -lSDL
+
+LIB := ../../general/libgeneral.a ../../sysenv/libsysenv.a
+
+define MAKE_MODULE
+ make --directory=../../general platform="linux"
+ make --directory=../../sysenv platform="linux"
+endef
+define CLEAN_MODULE
+ make --directory=../../general clean
+ make --directory=../../sysenv clean
+endef
+
+.PHONY: all cleanlib clean 
+
+all : cleanlib $(TARGET)
+
+%.o : %.c
+	$(ECHO) "\033[33mmaking $<...\033[0m"
+	$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o $@ -c $<
+
+%.o : ./font/%.c
+	$(ECHO) "\033[33mmaking $<...\033[0m"
+	$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o $@ -c $<
+
+%.o : ./font/language/%.c
+	$(ECHO) "\033[33mmaking $<...\033[0m"
+	$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o $@ -c $<
+	
+	
+%.o : ../../gui-app/%.c
+	$(ECHO) "\033[33mmaking $<...\033[0m"
+	$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o $@ -c $<
+
+%.o : windows/%.c
+	$(ECHO) "\033[33mmaking $<...\033[0m"
+	$(CC) $(CFLAGS) -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o $@ -c $<
+
+
+$(TARGET) : $(OBJ) $(LIB)
+	$(CC) $^ -o $@ $(LDFLAGS) $(JAUI_LDFLAGS) $(LIB)
+sinclude $(DEP)
+
+$(LIB) :
+	$(MAKE_MODULE)
+
+cleanlib :
+	$(RM) ../../general/*.a
+	$(RM) ../../sysenv/*.a
+
+clean:
+	$(RM) $(OBJ) $(DEP) $(TARGET)
+	$(CLEAN_MODULE)
